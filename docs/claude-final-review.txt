@@ -1,0 +1,31 @@
+## Findings
+
+**1. `DeckWidget::assignFromSource` — DSK keyer detection: inner `break` doesn't stop outer ancestor walk**
+
+```cpp
+for (QObject *ancestor = view->parent(); ancestor; ancestor = ancestor->parent())
+    for (const auto &k : snap.keyers)
+        if (ancestor->objectName() == k.name && k.scenes.contains(name)) {
+            action.type = "dsk";
+            ...
+            found = true;
+            break;   // only breaks the keyers loop
+        }
+```
+Once a matching keyer is found, the code keeps walking further up the parent chain and keeps re-running the keyers loop, so a later ancestor that happens to match a *different* keyer's `objectName`/scene list will silently overwrite `action.type/channel/name` and `found`. The result is an action resolved to the wrong DSK channel (or wrong scene) instead of the keyer that actually owns the dragged view. Fix: stop the outer loop once `found` is true, e.g. `for (...; ancestor && !found; ...)`.
+
+**2. `ScrubButton` — drag/click suppression is gated on `scrub` being non-null**
+
+```cpp
+void mouseMoveEvent(QMouseEvent *e) override
+{
+    if ((e->buttons() & Qt::LeftButton) && scrub) {   // <-- requires scrub
+        ...
+        if (dragging_) { ... e->accept(); return; }
+    }
+    QPushButton::mouseMoveEvent(e);
+}
+```
+`dragging_` is only ever set to `true` inside the `scrub` branch. If the `scrub` callback hasn't been wired up (null) when the button is dragged, `dragging_` stays `false` for the whole gesture, every `mouseMoveEvent` falls through to the base class, and `mouseReleaseEvent` therefore also falls through to `QPushButton::mouseReleaseEvent`, emitting a normal click — exactly the "dragging must never click" case the design is supposed to prevent. The threshold/drag detection should not depend on an unrelated optional callback; track `dragging_` independent of whether `scrub` is set (only the actual `scrub(next)` call needs the null check).
+
+No other concrete defects found in the `allowed()`/`nativeDrag`/`ownDrag` gating, the `Qt::MoveAction` choice for `nativeDrag` (safe per the Qt `clearOrRemove` target==source rule, since the target here is never the "scenes" viewport), or the image-vs-scene branch ordering in `dropEvent`.

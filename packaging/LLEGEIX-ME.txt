@@ -1,0 +1,55 @@
+BOTONERA PER A OBS · @VERSION@
+
+WINDOWS — PRIORITAT DE PROVA
+1. Instal·la OBS Studio 33 de 64 bits a Windows 10/11 x64 (Intel/AMD).
+2. Tanca OBS. Executa Botonera-@VERSION@-Windows-x64-Setup.exe i accepta
+   el permís d'administrador. L'instal·lador és en català.
+3. Obre OBS i ves a Acobladors (Docks) > Botonera.
+
+S'instal·la per a tots els usuaris a:
+C:\ProgramData\obs-studio\plugins\obs-control-deck\obs-control-deck.dll
+C:\ProgramData\obs-studio\plugins\obs-control-deck\data\locale\...
+No cal copiar fitxers manualment. Aquest és el format nou d'OBS 33.
+Per desinstal·lar: Configuració de Windows > Aplicacions instal·lades >
+Botonera per a OBS. Es conserven escenes, perfils i configuració de botonera.
+Aquest instal·lador no és per a OBS en mode portable ni per a OBS ARM64.
+
+MAC
+1. Tanca OBS.
+2. Obre Botonera-@VERSION@-macOS-universal.pkg i segueix l'assistent.
+   Instal·la'l per a l'usuari actual, tant en Apple Silicon com en Intel.
+3. Obre OBS > Acobladors > Botonera.
+La destinació és ~/Library/Application Support/obs-studio/plugins/
+obs-control-deck.plugin. Per retirar-lo, amb OBS tancat mou aquest paquet
+.plugin a la paperera. La configuració continua a la col·lecció d'escenes.
+
+PRIMERA PROVA (AMB UNA COL·LECCIÓ DE PROVES)
+- Clic dret > Configurar la botonera. Defineix graella i adapta la mida.
+- Assigna dues escenes i comprova els números 01, 02... centrats i sencers.
+- En edició, comprova les etiquetes de drecera dels botons que en tenen.
+- Arrossega una imatge, reordena i desa. Torna a realització.
+- En mode estudi, selecciona una escena, un tipus C/F/M i un temps.
+  C és tall instantani i desactiva els temps. Prem TRANSICIÓ per executar.
+- Comprova els presets i el separador d’amplada en mode configuració.
+- Si fas servir Downstream Keyer, instal·la la seva versió compatible:
+  https://obsproject.com/forum/resources/downstream-keyer.1254/
+  Afegeix una composició a un canal DSK i assigna-la a la botonera.
+  Primer clic: es mostra; segon: s'amaga. Repeteix tres vegades.
+- Tanca i torna a obrir OBS: comprova que la configuració es conserva.
+
+Si el plugin no carrega, guarda el registre des d'Ajuda > Fitxers de registre
+(Help > Log Files), juntament amb la versió d'OBS i de Windows. No cal
+començar cap transmissió per fer aquestes proves.
+
+DEPENDÈNCIES I LÍMITS
+OBS ja aporta les biblioteques Qt i el runtime que necessita el plugin.
+No s'inclouen OBS, Downstream Keyer ni Montserrat dins de l'instal·lador.
+Montserrat és opcional: si no hi és, s'utilitza la tipografia d'OBS.
+La compilació Windows és x64 i s'ha comprovat el contingut dels paquets,
+però encara NO s'ha executat en un PC. La primera instal·lació és de prova.
+Els instal·ladors no tenen signatura comercial d'editor ni notarització Apple;
+el sistema pot mostrar un avís d'editor desconegut. No desactivis les
+proteccions del sistema per fer la prova.
+
+Documentació de les rutes actuals d'OBS:
+https://obsproject.com/kb/legacy-plugin-developer-info

@@ -1,0 +1,60 @@
+Reviewed the four files for concrete, code-derivable bugs (not relying on unseen headers). Found four solid issues, all in the requested areas; scene switching, import/export, and edit-mode gating otherwise look correct.
+
+## 1. DSK success-check inconsistency (CallVendorRequest) — false failure on success
+`src/obs-backend.cpp`, `dskRequest()` vs `ObsBackend::execute()`:
+
+```cpp
+// dskRequest() — guards for the case where "success" is absent on a successful response:
+if(result.contains("success")&&!result["success"].toBool())error="DSK: "+result["error"].toString("acció rebutjada");
+...
+// execute() — same response, no guard:
+const auto response=dskRequest("dsk_select_scene",{...},error);
+if(error.isEmpty()&&!response["success"].toBool())error="DSK no ha confirmat l'acció.";
+```
+
+`dskRequest()`'s own logic treats a missing `"success"` key as "not a failure" (it only flags an error when the key is present *and* false). `execute()` re-checks the same JSON without that `contains()` guard, so `response["success"].toBool()` defaults to `false` when the key is absent — turning every successful DSK response that doesn't carry a `"success"` field into a reported failure ("DSK no ha confirmat l'acció."). This is an internal inconsistency in the code itself, independent of what the real vendor payload looks like.
+
+## 2. DSK "clear" sends `""`, not JSON `null`, contradicting the code's own comment
+`src/obs-backend.cpp`, `ObsBackend::execute()`:
+
+```cpp
+// Explicit null selection is DSK's supported off operation; toggles read the real state first.
+const QString next=b.type=="dsk-clear"||k->current==b.name ? QString{} : b.name;
+const auto response=dskRequest("dsk_select_scene",{{"view_name",""},{"dsk_name",b.channel},{"scene",next}},error);
+```
+
+The comment states the off/clear operation is "explicit null selection," but `next` is `QString{}` (empty string), and `{{"scene",next}}` constructs a QJsonValue of type **String** `""`, never JSON `null`. If the downstream-keyer vendor request actually distinguishes `null` (clear) from an empty-named scene `""`, this sends the wrong payload for the clear/off action. At minimum the comment and implementation disagree and one of them needs fixing.
+
+## 3. Save-callback load path wipes config on parse failure
+`src/obs-backend.cpp`, `ObsBackend::saveCallback()`:
+
+```cpp
+Config config;QString error;const QByteArray raw=obs_data_get_string(data,"obs-control-deck");
+if(!raw.isEmpty()&&!Config::parse(QJsonDocument::fromJson(raw).object(),config,error))
+    blog(LOG_WARNING,"[obs-control-deck] Cannot load configuration: %s",error.toUtf8().constData());
+self->config_=config;
+if(self->widget_) self->widget_->load(config);
+```
+
+When `raw` is non-empty but `Config::parse` fails (corrupt data, incompatible schema, etc.), the code only logs a warning and then **unconditionally** continues to `self->config_=config;` using the default-constructed (empty) `config`. This discards the user's existing in-memory button/preset layout. Any subsequent `persist()` call (triggered by almost any UI interaction — resize, drag reorder, edit) will then call `obs_frontend_save()` and overwrite the on-disk "obs-control-deck" blob with the now-empty config, making the loss permanent. On parse failure, `self->config_` (and the widget) should be left unchanged.
+
+## 4. CUT restore-transition state can be clobbered by re-entrant CUT
+`src/obs-backend.cpp`, `ObsBackend::transition()` and `ObsBackend::event()`:
+
+```cpp
+// transition(): unconditional overwrite, no check for an already-pending restore
+if(name=="@cut"){restoreTransition_=s.transition;restoreDuration_=s.duration;}
+obs_frontend_set_current_transition(next.get());...
+if(trigger){triggerGuard_.restart();obs_frontend_preview_program_trigger_transition();}
+```
+
+```cpp
+// busy detection relies on a fixed 150ms window for cut transitions, not a completion signal:
+s.busy=(time>0.f&&time<1.f)||(triggerGuard_.isValid()&&triggerGuard_.elapsed()<150);
+```
+
+`restoreTransition_`/`restoreDuration_` are overwritten every time `@cut` runs, with no check for whether a previous CUT's restore is still pending (i.e. `OBS_FRONTEND_EVENT_TRANSITION_STOPPED` hasn't fired yet for it). The only protection against a second CUT landing inside that window is the hardcoded 150 ms `triggerGuard_`, not an actual confirmation that the prior transition stopped. If the real `TRANSITION_STOPPED` event is delayed past 150 ms for any reason, a second CUT overwrites `restoreTransition_` with the current ("Cut") transition name instead of the user's original transition, and the eventual restore in `event()` will set the transition back to Cut instead of the prior selection — leaving the transition type stuck on "Cut" after the operation.
+
+---
+
+No additional concrete bugs found in plain scene switching, `Config::parse`/import/export validation, or edit-mode click/double-click/context-menu gating in `deck-widget.cpp` — those paths are internally consistent with each other. One lower-confidence note: in `execute()`, scene-button presses (including setting the *preview* scene in studio mode) are blocked whenever `s.busy` (a program transition is in progress) — this may be an intentional restriction rather than a bug, but it is stricter than native OBS behavior, which allows changing the preview scene independent of an ongoing program transition; worth confirming intent rather than treating as settled.
