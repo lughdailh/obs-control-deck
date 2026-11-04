@@ -6,7 +6,9 @@ Pàgina estàtica en català, anglès i castellà, preparada per a `https://empr
 
 Descomprimeix `dist/Botonera-0.2.6-web-emprenyat.zip` i puja el contingut de `obs/botonera/` a la carpeta homònima del servidor. No cal Node, PHP ni cap base de dades. Els instal·ladors es descarreguen de la release pública de GitHub v0.2.6.
 
-La previsualització de Sites és privada i independent del domini emprenyat.cat. Aquest treball no modifica el servidor del domini.
+La web està publicada a https://emprenyat.cat/obs/botonera/ i el projecte Botonera apareix a la portada. Instal·lada des del gestor `/admin/`, amb carpeta base `obs`, carpeta `botonera` i etiqueta «Plugin d’OBS». La previsualització de Sites continua sent privada i independent del domini.
+
+Per actualitzar-la al gestor, edita el projecte Botonera i puja un ZIP amb `index.html` a l’arrel, com `dist/Botonera-0.2.6-web-admin.zip`. El ZIP per FTP té una estructura diferent. Conserva la icona quadrada a la portada; la capçalera de la pàgina utilitza `hero-machine.png` amb transparència.
 
 El ZIP també conté `integracio-portada/`: un fragment HTML amb les mateixes classes que les targetes de projectes de la portada i una icona de 400 píxels d’alçada. Copia la imatge a `assets/img/projectes/` de la portada i insereix el fragment al lloc que prefereixis. No substitueixis la portada sencera.
 
