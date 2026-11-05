@@ -395,3 +395,12 @@ La prova real de la 0.2.7 enviada per l’usuari mostra que el repartiment en mi
 Les regressions comproven ara tots els límits dels avantpassats de cada selector i de cada temps, no només la posició global del botó principal: això detecta contingut retallat dins d’un contenidor. També es comprova l’ordre tipus → temps → TRANSICIÓ, el buit màxim de 8 px després dels temps, els presets buits ocults i la posició del botó després de focus, estat ocupat i sis transicions.
 
 Captura de revisió: docs/botonera-0.2.8.png, amb quatre transicions i sense presets, en un panell de 560 × 320. És una captura del banc Qt al Mac, no d’OBS Windows. La correcció 0.2.8 requereix encara la comprovació nativa al PC. Es manté l’instal·lador amb dues còpies idèntiques del DLL per a OBS 32 i OBS 33.
+
+
+## 0.2.9 — Pintat dels selectors i restabliment de color
+
+La fotografia nova de Windows mostra que la 0.2.8 encara retallava el dibuix dels botons superiors. No es considera validada la seva aparença a Windows. El tema Yami declara `height`, a més de `max-height`, marges i padding. Ara els controls compactes defineixen també `height` explícitament; els ControlButton usen WA_LayoutUsesWidgetRect i els selectors sense imatge es pinten amb QPainter dins del seu rectangle complet, sense delegar el fons i la vora a CE_PushButton del tema. El contenidor dels tipus deixa de fixar l’alçada i incorpora 2 px de marge exterior.
+
+La prova visual comprova els píxels de la vora inferior, tant en el botó aïllat com composat dins del contenidor, amb un estil amfitrió que declara 54 px d’alçada, marges i padding, i amb un canvi tardà d’alçada. Es mantenen les proves de límits, focus i accions. La prova al Mac no ha reproduït exactament el defecte enviat des del PC; superar-la no acredita que el problema Windows estigui resolt. Cal la comprovació nativa d’aquesta versió.
+
+L’editor incorpora «Eliminar color», que torna al color per defecte del model i conserva la imatge. Es prova tant Desar com Cancel·lar; Cancel·lar no modifica el color guardat.

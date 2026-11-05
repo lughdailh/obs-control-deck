@@ -204,6 +204,61 @@ public:
 		QVERIFY(!presets->isVisible());
 		QCOMPARE(action->height(), 64);
 	}
+	void selectorsSurviveLateHostSizing()
+	{
+		const auto originalStyle = qApp->styleSheet();
+		qApp->setStyleSheet("QPushButton { height:54px; min-height:54px; max-height:54px; margin-top:6px; margin-bottom:6px; padding:12px 24px; }");
+		DemoBackend backend;
+		backend.state.transitions = {"Tall", "Fos", "Move", "Luma"};
+		backend.state.transitionKinds = {{"Tall", "cut_transition"}, {"Fos", "fade_transition"}};
+		auto config = backend.demo(); config.locked = true; config.presets.clear();
+		deck::DeckWidget widget(backend); widget.load(config); widget.resize(600, 400); widget.show();
+		QApplication::processEvents(); QApplication::processEvents();
+		auto choices = widget.findChildren<QPushButton *>("transitionChoice");
+		// OBS can repolish controls after they have been added to the dock.
+		for (auto *choice : choices) choice->setFixedHeight(34);
+		QApplication::processEvents(); QApplication::processEvents();
+		for (auto *choice : choices) {
+			choice->setChecked(false);
+			const auto pixels = choice->grab().toImage();
+			const auto lowerBorder = pixels.pixelColor(pixels.width() / 2, pixels.height() - 1);
+			QVERIFY(std::abs(lowerBorder.red() - 69) <= 5);
+			QVERIFY(std::abs(lowerBorder.green() - 77) <= 5);
+			QVERIFY(std::abs(lowerBorder.blue() - 89) <= 5);
+			const auto panel = choice->parentWidget()->grab().toImage();
+			const qreal ratio = panel.devicePixelRatio();
+			const QPoint point = choice->pos() + QPoint(choice->width()/2, choice->height());
+			const auto composedBorder = panel.pixelColor(int(point.x()*ratio), int(point.y()*ratio)-1);
+			QVERIFY(std::abs(composedBorder.red() - 69) <= 5);
+			QVERIFY(std::abs(composedBorder.green() - 77) <= 5);
+			QVERIFY(std::abs(composedBorder.blue() - 89) <= 5);
+			for (auto *parent = choice->parentWidget(); parent; parent = parent->parentWidget()) {
+				QVERIFY(parent->rect().contains(QRect(choice->mapTo(parent, QPoint()), choice->size())));
+				if (parent == &widget) break;
+			}
+		}
+		qApp->setStyleSheet(originalStyle);
+	}
+
+	void buttonColorCanBeResetOrCancelled()
+	{
+		DemoBackend backend; deck::DeckWidget widget(backend);
+		auto config = backend.demo(); config.locked = false; config.buttons[0].color = "#ff0000";
+		widget.load(config); widget.show(); QApplication::processEvents();
+		auto *tiles = widget.findChild<QListWidget *>("sceneTiles");
+		for (bool save : {false, true}) {
+			QTimer::singleShot(0, [&] {
+				auto *editor = widget.findChild<QDialog *>("buttonEditor"); QVERIFY(editor);
+				auto *reset = editor->findChild<QPushButton *>("resetButtonColor"); QVERIFY(reset); QVERIFY(reset->isEnabled());
+				reset->click(); QVERIFY(reset->isEnabled());
+				if (save) editor->findChild<QDialogButtonBox *>()->button(QDialogButtonBox::Save)->click();
+				else editor->reject();
+			});
+			QMetaObject::invokeMethod(tiles, "itemDoubleClicked", Qt::DirectConnection, Q_ARG(QListWidgetItem *, tiles->item(0)));
+			QCOMPARE(widget.config().buttons[0].color, save ? deck::Button{}.color : config.buttons[0].color);
+			QCOMPARE(widget.config().buttons[0].image, config.buttons[0].image);
+		}
+	}
 	void editingShortcutBadges()
 	{
 		DemoBackend b; deck::DeckWidget w(b); auto config = b.demo();
@@ -929,6 +984,8 @@ int main(int argc, char **argv)
 		t.typographyOverridesHostTheme();
 		t.compactTransitionAndDskToggle();
 		t.transitionColumnsLayout();
+		t.selectorsSurviveLateHostSizing();
+		t.buttonColorCanBeResetOrCancelled();
 		t.transitionActionStaysVisibleAcrossFocusAndBusyChanges();
 		t.editingShortcutBadges();
 		t.illuminatedNumbersAndVisibility();

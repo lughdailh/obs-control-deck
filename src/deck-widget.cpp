@@ -373,7 +373,9 @@ public:
 };
 class ControlButton : public QPushButton {
 public:
-	using QPushButton::QPushButton;
+	explicit ControlButton(const QString &text, QWidget *parent = nullptr) : QPushButton(text, parent) {
+		setAttribute(Qt::WA_LayoutUsesWidgetRect);
+	}
 	bool operational = false, configurable = false, contextDown = false;
 	QString encodedImage;
 	QImage artwork;
@@ -387,6 +389,18 @@ public:
 protected:
 	void paintEvent(QPaintEvent *event) override {
 		const auto key = property("shortcutLabel").toString();
+		// Do not let a host theme's fixed content height crop the rounded bottom.
+		if (objectName() == "transitionChoice" && artwork.isNull()) {
+			QPainter p(this); p.setRenderHint(QPainter::Antialiasing);
+			const QColor edge = isChecked() ? QColor("#858f9d") : QColor("#454d59");
+			const QColor fill = isChecked() ? QColor("#3a424f") : underMouse() ? QColor("#303741") : QColor("#252a32");
+			p.setPen(QPen(edge, 1)); p.setBrush(fill);
+			p.drawRoundedRect(QRectF(rect()).adjusted(.5, .5, -.5, -.5), 7, 7);
+			const int badge = paintShortcutBadge(&p, rect().adjusted(3, 3, -3, -3), key);
+			p.setFont(font()); p.setPen(isEnabled() ? QColor("#e1e4e8") : QColor("#8993a3"));
+			p.drawText(rect().adjusted(1, badge ? badge + 3 : 0, -1, 0), Qt::AlignCenter, text());
+			return;
+		}
 		if (artwork.isNull()) {
 			if (key.isEmpty()) { QPushButton::paintEvent(event); return; }
 			QPainter p(this); QStyleOptionButton option; initStyleOption(&option); option.text.clear();
@@ -546,13 +560,13 @@ DeckWidget::DeckWidget(Backend &backend, QWidget *parent) : QWidget(parent), bac
 		"QWidget#controlDeck QPushButton:hover { background:palette(midlight); }"
 		"QWidget#controlDeck QPushButton:checked { background:palette(highlight); color:palette(highlighted-text); }"
 		"QWidget#controlDeck QPushButton:disabled { color:palette(mid); }"
-		"QWidget#controlDeck QPushButton#autoTransition { min-height:62px; max-height:62px; margin:0px; padding:0px; background:#e4a526; color:#191919; font-weight:bold; font-size:16px; }"
+		"QWidget#controlDeck QPushButton#autoTransition { height:62px; min-height:62px; max-height:62px; margin:0px; padding:0px; background:#e4a526; color:#191919; font-weight:bold; font-size:16px; }"
 		"QWidget#controlDeck QPushButton#autoTransition:disabled { background:#555; color:#aaa; }"
-		"QWidget#controlDeck QPushButton#transitionChoice { min-height:26px; max-height:26px; min-width:26px; max-width:10000px; padding:0px; margin:0px; background:#252a32; border:1px solid #454d59; color:#aab0bb; font-size:10px; }"
+		"QWidget#controlDeck QPushButton#transitionChoice { height:26px; min-height:26px; max-height:26px; min-width:26px; max-width:10000px; padding:0px; margin:0px; background:#252a32; border:1px solid #454d59; color:#aab0bb; font-size:10px; }"
 		"QWidget#controlDeck QPushButton#transitionChoice:checked { background:#3a424f; border-color:#858f9d; color:#e1e4e8; }"
 		"QWidget#controlDeck QPushButton#transitionChoice:hover { background:#303741; }"
 		"QWidget#controlDeck QPushButton#transitionPreset { min-height:36px; max-height:36px; padding:0px; margin:0px; font-weight:600; }"
-		"QWidget#controlDeck QPushButton#durationChoice { min-height:22px; max-height:22px; min-width:0px; margin:0px; padding:0px; font-size:10px; border-radius:5px; color:#d5dce6; background:#252a32; }"
+		"QWidget#controlDeck QPushButton#durationChoice { height:22px; min-height:22px; max-height:22px; min-width:0px; margin:0px; padding:0px; font-size:10px; border-radius:5px; color:#d5dce6; background:#252a32; }"
 		"QWidget#controlDeck QPushButton#durationChoice:checked { background:#3d5d87; border-color:#8bb6e7; color:#ffffff; }"
 		"QWidget#controlDeck QPushButton#durationChoice:disabled { color:#8993a3; background:#252a32; }"
 		"QWidget#controlDeck QPushButton#durationChoice:checked:disabled { background:#34465f; color:#d5dce6; }"
@@ -705,7 +719,7 @@ DeckWidget::DeckWidget(Backend &backend, QWidget *parent) : QWidget(parent), bac
 	transitionChoices_ = new QWidget;
 	transitionChoices_->setObjectName("transitionChoices");
 	transitionChoices_->setLayout(new QGridLayout);
-	transitionChoices_->layout()->setContentsMargins(0, 0, 0, 0);
+	transitionChoices_->layout()->setContentsMargins(2, 2, 2, 2);
 	transitionChoices_->layout()->setSpacing(4);
 	transitionChoices_->layout()->setAlignment(Qt::AlignLeft | Qt::AlignTop);
 	transitionChoices_->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
@@ -733,6 +747,7 @@ DeckWidget::DeckWidget(Backend &backend, QWidget *parent) : QWidget(parent), bac
 	for (int i = 0; i < 8; ++i) {
 		auto *choice = new QPushButton;
 		choice->setObjectName("durationChoice");
+		choice->setAttribute(Qt::WA_LayoutUsesWidgetRect);
 		choice->setCheckable(true);
 		choice->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Fixed);
 		choice->ensurePolished(); choice->setFixedHeight(24);
@@ -1493,7 +1508,7 @@ void DeckWidget::refresh()
 		}
 		layout->setSizeConstraint(QLayout::SetMinimumSize);
 		layout->activate();
-		transitionChoices_->setFixedHeight(layout->minimumSize().height());
+		transitionChoices_->updateGeometry();
 	}
 	if (!duration_->hasFocus()) {
 		QSignalBlocker b(duration_);
@@ -1691,6 +1706,9 @@ void DeckWidget::editButton(int index, const QString &image)
 	auto *choose = button("Triar imatge…", imageRow);
 	auto *clear = button("Treure imatge", imageRow);
 	auto *color = button("Color…", imageRow);
+	auto *resetColor = button("Eliminar color", imageRow);
+	resetColor->setObjectName("resetButtonColor");
+	resetColor->setToolTip("Torna al gris predeterminat del botó");
 	root->addLayout(imageRow);
 	QLabel imageStatus(value.image.isEmpty() ? "Sense imatge" : "Imatge personalitzada inclosa");
 	root->addWidget(&imageStatus);
@@ -1716,8 +1734,12 @@ void DeckWidget::editButton(int index, const QString &image)
 	});
 	connect(color, &QPushButton::clicked, &dialog, [&] {
 		auto c = QColorDialog::getColor(QColor(value.color), &dialog, "Color del botó");
-		if (c.isValid())
+		if (c.isValid()) {
 			value.color = c.name();
+		}
+	});
+	connect(resetColor, &QPushButton::clicked, &dialog, [&] {
+		value.color = Button{}.color;
 	});
 	QDialogButtonBox buttons(QDialogButtonBox::Save | QDialogButtonBox::Cancel);
 	root->addWidget(&buttons);
