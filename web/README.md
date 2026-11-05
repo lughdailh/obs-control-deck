@@ -8,7 +8,7 @@ Descomprimeix `dist/Botonera-0.2.6-web-emprenyat.zip` i puja el contingut de `ob
 
 La web està publicada a https://emprenyat.cat/obs/botonera/ i el projecte Botonera apareix a la portada. Instal·lada des del gestor `/admin/`, amb carpeta base `obs`, carpeta `botonera` i etiqueta «Plugin d’OBS». La previsualització de Sites continua sent privada i independent del domini.
 
-Per actualitzar-la al gestor, edita el projecte Botonera i puja un ZIP amb `index.html` a l’arrel, com `dist/Botonera-0.2.6-web-admin.zip`. El ZIP per FTP té una estructura diferent. Conserva la icona quadrada a la portada; la capçalera de la pàgina utilitza `hero-machine.png` amb transparència.
+Per actualitzar-la al gestor, edita el projecte Botonera i puja un ZIP amb `index.html` a l’arrel, com `dist/Botonera-0.2.6-web-admin.zip`. El ZIP per FTP té una estructura diferent. La portada i la capçalera de la pàgina utilitzen la màquina de `images/hero-machine.png` amb fons transparent. Per canviar la icona al gestor es pot pujar aquest PNG directament; el servidor el redueix a 400 píxels d’alçada. La icona quadrada original es conserva com a recurs del projecte.
 
 El ZIP també conté `integracio-portada/`: un fragment HTML amb les mateixes classes que les targetes de projectes de la portada i una icona de 400 píxels d’alçada. Copia la imatge a `assets/img/projectes/` de la portada i insereix el fragment al lloc que prefereixis. No substitueixis la portada sencera.
 
