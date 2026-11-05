@@ -95,13 +95,15 @@ public:
 		QVERIFY(!columns->handle(1)->isEnabled());
 		for (auto size : {QSize(1200,560), QSize(700,420), QSize(520,320), QSize(1400,780)}) {
 			w.resize(size); QApplication::processEvents(); QApplication::processEvents();
-			QVERIFY(std::abs(autoButton->geometry().center().y() - center->rect().center().y()) <= 2);
+			QVERIFY(center->rect().contains(autoButton->geometry()));
 			QVERIFY(autoButton->width() <= center->width());
-			QVERIFY(autoButton->height() >= 104);
+			QCOMPARE(autoButton->height(), 64);
 			auto *presetLabel = w.findChild<QLabel *>("transitionPresetLabel");
 			QVERIFY(presetLabel->mapToGlobal(QPoint()).y() > autoButton->mapToGlobal(autoButton->rect().bottomLeft()).y());
-			auto *selectorScroll = w.findChild<QScrollArea *>("transitionSelectorScroll");
-			QVERIFY(autoButton->mapToGlobal(QPoint()).y() > selectorScroll->mapToGlobal(selectorScroll->rect().bottomLeft()).y());
+			const int durationBottom = duration->mapToGlobal(duration->rect().bottomLeft()).y();
+			const int actionTop = autoButton->mapToGlobal(QPoint()).y();
+			QVERIFY(actionTop > durationBottom);
+			QVERIFY(actionTop - durationBottom <= 8);
 			const QStringList codes = {"C", "F", "M", "S"};
 			int codeIndex = 0;
 			for (auto *choice : choices->findChildren<QPushButton *>("transitionChoice")) {
@@ -157,22 +159,30 @@ public:
 		deck::DeckWidget widget(backend); widget.load(config); widget.resize(600, 340); widget.show();
 		QApplication::processEvents(); QApplication::processEvents();
 		auto *action = widget.findChild<QPushButton *>("autoTransition");
-		auto *selectors = widget.findChild<QScrollArea *>("transitionSelectorScroll");
+		auto *selectors = widget.findChild<QWidget *>("transitionSelectors");
 		auto *presets = widget.findChild<QScrollArea *>("transitionPresetScroll");
 		QVERIFY(selectors); QVERIFY(presets);
 		const QPoint fixed = action->mapTo(&widget, QPoint());
 		QVERIFY(widget.rect().contains(QRect(fixed, action->size())));
-		QVERIFY(selectors->verticalScrollBar()->maximum() > 0);
+		auto fullyVisible = [&](QWidget *control) {
+			for (auto *parent = control->parentWidget(); parent; parent = parent->parentWidget()) {
+				QVERIFY(parent->rect().contains(QRect(control->mapTo(parent, QPoint()), control->size())));
+				if (parent == &widget) break;
+			}
+		};
+		fullyVisible(action);
+		QVERIFY(widget.rect().contains(QRect(selectors->mapTo(&widget, QPoint()), selectors->size())));
+		QVERIFY(!widget.findChild<QScrollArea *>("transitionSelectorScroll"));
 		for (auto *choice : widget.findChildren<QPushButton *>("transitionChoice")) {
+			fullyVisible(choice);
 			const auto area = choice->parentWidget()->rect();
 			QVERIFY(area.contains(choice->geometry()));
-			const QPoint visible = choice->mapTo(selectors->viewport(), QPoint());
-			QVERIFY(visible.x() >= 0);
-			QVERIFY(visible.x() + choice->width() <= selectors->viewport()->width());
+			const QRect visible(choice->mapTo(selectors, QPoint()), choice->size());
+			QVERIFY(selectors->rect().contains(visible));
+			QVERIFY(widget.rect().contains(QRect(choice->mapTo(&widget, QPoint()), choice->size())));
 		}
 		auto presetButtons = widget.findChildren<QPushButton *>("transitionPreset");
 		for (int i = 0; i < 6; ++i) {
-			selectors->verticalScrollBar()->setValue(selectors->verticalScrollBar()->maximum());
 			presets->ensureWidgetVisible(presetButtons.last());
 			presetButtons.last()->setFocus();
 			backend.state.busy = true; widget.refresh(); QApplication::processEvents();
@@ -183,6 +193,16 @@ public:
 			QCOMPARE(action->mapTo(&widget, QPoint()), fixed);
 		}
 		QCOMPARE(backend.triggers, 6);
+		for (auto *choice : widget.findChildren<QPushButton *>("durationChoice")) {
+			if (!choice->isVisible()) continue;
+			fullyVisible(choice);
+			QVERIFY(widget.rect().contains(QRect(choice->mapTo(&widget, QPoint()), choice->size())));
+			QVERIFY(choice->mapTo(&widget, choice->rect().bottomLeft()).y() < action->mapTo(&widget, QPoint()).y());
+		}
+		config.presets.clear(); widget.load(config); QApplication::processEvents(); QApplication::processEvents();
+		QVERIFY(!widget.findChild<QLabel *>("transitionPresetLabel")->isVisible());
+		QVERIFY(!presets->isVisible());
+		QCOMPARE(action->height(), 64);
 	}
 	void editingShortcutBadges()
 	{
@@ -213,7 +233,7 @@ public:
 		QVERIFY(autoButton->isVisible()); QVERIFY(!cut->isVisible());
 		QVERIFY(!w.findChild<QLabel *>("transitionHeading"));
 		for (auto *choice : w.findChildren<QPushButton *>("transitionChoice")) {
-			QVERIFY(choice->width() >= 28); QCOMPARE(choice->height(), 36);
+			QVERIFY(choice->width() >= 28); QCOMPARE(choice->height(), 28);
 			QVERIFY(!choice->accessibleName().isEmpty());
 		}
 		const auto dsk = config.buttons[6];

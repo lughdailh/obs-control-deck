@@ -72,9 +72,11 @@ int main(int argc, char **argv)
 			config.buttons[3].image = QString::fromLatin1(encoded.toBase64());
 		}
 	}
+	if (app.arguments().contains("--no-presets")) config.presets.clear();
 	widget.load(config);
 	widget.resize(app.arguments().contains("--small") ? QSize(560, 480) : QSize(1040, 540));
 	if (website) widget.resize(920,650);
+	if (app.arguments().contains("--short")) widget.resize(560,320);
 	widget.show();
 	qInfo() << "Tipografia de la botonera:" << QFontInfo(widget.font()).family();
 	if (app.arguments().contains("--editor"))

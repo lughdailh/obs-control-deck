@@ -27,7 +27,7 @@ void obs_module_post_load(void)
 		blog(LOG_ERROR, "[obs-control-deck] Cannot register dock.");
 		return;
 	}
-	blog(LOG_INFO, "[obs-control-deck] Loaded 0.2.7");
+	blog(LOG_INFO, "[obs-control-deck] Loaded 0.2.8");
 }
 void obs_module_unload(void)
 {

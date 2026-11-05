@@ -386,3 +386,12 @@ Regressió: acoblador de 600 × 340, nou tipus de transició i vint presets addi
 Compilació macOS universal i Windows x64. Instal·ladors extrets i verificats: tots dos DLL de Windows són idèntics i corresponen al binari compilat; les traduccions, la guia i la versió del paquet macOS són correctes. OBS 32 escaneja bin/64bit; OBS 33 prioritza el DLL de l’arrel i descarta el duplicat legacy després de carregar-lo. S’eliminen totes dues còpies en desinstal·lar. No és un instal·lador per a OBS portable.
 
 La captura de revisió es genera amb deck-preview, no és una captura d’OBS Windows. Aquesta correcció 0.2.7 encara no s’ha executat en un PC; les fotos de l’usuari documenten el problema anterior en Windows/OBS 32.2.2.
+
+
+## 0.2.8 — Controls sencers i columna compacta
+
+La prova real de la 0.2.7 enviada per l’usuari mostra que el repartiment en mitges columnes encara retallava els temps. Es retira aquest repartiment i el desplaçament dels selectors. Ara un QVBoxLayout reserva l’alçada natural dels tipus i els temps, posa TRANSICIÓ immediatament a sota i assigna la resta als presets. El botó groc passa de 106 a 64 px, els tipus de 36 a 28 px i els temps de 26 a 24 px. L’apartat de presets s’amaga si és buit i s’alinea a dalt quan té contingut. Es permet que el layout calculi l’alçada mínima del panell, en lloc d’imposar 300 px encara que els controls no hi càpiguen.
+
+Les regressions comproven ara tots els límits dels avantpassats de cada selector i de cada temps, no només la posició global del botó principal: això detecta contingut retallat dins d’un contenidor. També es comprova l’ordre tipus → temps → TRANSICIÓ, el buit màxim de 8 px després dels temps, els presets buits ocults i la posició del botó després de focus, estat ocupat i sis transicions.
+
+Captura de revisió: docs/botonera-0.2.8.png, amb quatre transicions i sense presets, en un panell de 560 × 320. És una captura del banc Qt al Mac, no d’OBS Windows. La correcció 0.2.8 requereix encara la comprovació nativa al PC. Es manté l’instal·lador amb dues còpies idèntiques del DLL per a OBS 32 i OBS 33.

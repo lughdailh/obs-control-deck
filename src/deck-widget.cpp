@@ -261,24 +261,6 @@ int paintShortcutBadge(QPainter *p, const QRect &area, const QString &text)
 	p->restore();
 	return height;
 }
-// Keep the action outside both scroll areas. Focus changes during a transition
-// must never scroll the production button out of view.
-class TransitionRail : public QWidget {
-public:
-	QWidget *top = nullptr, *action = nullptr, *bottom = nullptr;
-	QSize sizeHint() const override { return {180, 420}; }
-	QSize minimumSizeHint() const override { return {170, 162}; }
-	void arrange() {
-		if (!top || !action || !bottom) return;
-		const int actionHeight = 106, gap = 12;
-		const int half = std::max(0, (height() - actionHeight - 2 * gap) / 2);
-		top->setGeometry(0, 0, width(), half);
-		action->setGeometry(0, half + gap, width(), actionHeight);
-		bottom->setGeometry(0, half + gap + actionHeight + gap, width(), half);
-	}
-protected:
-	void resizeEvent(QResizeEvent *event) override { QWidget::resizeEvent(event); arrange(); }
-};
 class TileDelegate : public QStyledItemDelegate {
 public:
 	using QStyledItemDelegate::QStyledItemDelegate;
@@ -554,7 +536,7 @@ DeckWidget::DeckWidget(Backend &backend, QWidget *parent) : QWidget(parent), bac
 		deckFont.setFamily("Montserrat");
 		setFont(deckFont);
 	}
-	setMinimumSize(480, 300);
+	setMinimumWidth(480);
 	// A local stylesheet takes precedence over the font imposed by the OBS theme.
 	const QString typography = hasMontserrat
 		? QStringLiteral("QWidget#controlDeck, QWidget#controlDeck QWidget { font-family: 'Montserrat'; }")
@@ -564,13 +546,13 @@ DeckWidget::DeckWidget(Backend &backend, QWidget *parent) : QWidget(parent), bac
 		"QWidget#controlDeck QPushButton:hover { background:palette(midlight); }"
 		"QWidget#controlDeck QPushButton:checked { background:palette(highlight); color:palette(highlighted-text); }"
 		"QWidget#controlDeck QPushButton:disabled { color:palette(mid); }"
-		"QWidget#controlDeck QPushButton#autoTransition { min-height:104px; max-height:104px; margin:0px; padding:0px; background:#e4a526; color:#191919; font-weight:bold; font-size:18px; }"
+		"QWidget#controlDeck QPushButton#autoTransition { min-height:62px; max-height:62px; margin:0px; padding:0px; background:#e4a526; color:#191919; font-weight:bold; font-size:16px; }"
 		"QWidget#controlDeck QPushButton#autoTransition:disabled { background:#555; color:#aaa; }"
-		"QWidget#controlDeck QPushButton#transitionChoice { min-height:34px; max-height:34px; min-width:26px; max-width:10000px; padding:0px; margin:0px; background:#252a32; border:1px solid #454d59; color:#aab0bb; font-size:10px; }"
+		"QWidget#controlDeck QPushButton#transitionChoice { min-height:26px; max-height:26px; min-width:26px; max-width:10000px; padding:0px; margin:0px; background:#252a32; border:1px solid #454d59; color:#aab0bb; font-size:10px; }"
 		"QWidget#controlDeck QPushButton#transitionChoice:checked { background:#3a424f; border-color:#858f9d; color:#e1e4e8; }"
 		"QWidget#controlDeck QPushButton#transitionChoice:hover { background:#303741; }"
 		"QWidget#controlDeck QPushButton#transitionPreset { min-height:36px; max-height:36px; padding:0px; margin:0px; font-weight:600; }"
-		"QWidget#controlDeck QPushButton#durationChoice { min-height:24px; max-height:24px; min-width:0px; margin:0px; padding:0px; font-size:10px; border-radius:5px; color:#d5dce6; background:#252a32; }"
+		"QWidget#controlDeck QPushButton#durationChoice { min-height:22px; max-height:22px; min-width:0px; margin:0px; padding:0px; font-size:10px; border-radius:5px; color:#d5dce6; background:#252a32; }"
 		"QWidget#controlDeck QPushButton#durationChoice:checked { background:#3d5d87; border-color:#8bb6e7; color:#ffffff; }"
 		"QWidget#controlDeck QPushButton#durationChoice:disabled { color:#8993a3; background:#252a32; }"
 		"QWidget#controlDeck QPushButton#durationChoice:checked:disabled { background:#34465f; color:#d5dce6; }"
@@ -682,29 +664,27 @@ DeckWidget::DeckWidget(Backend &backend, QWidget *parent) : QWidget(parent), bac
 	tiles_->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 	left->addWidget(gridScroll);
 	columns_->addWidget(sceneColumn);
-	auto *railContents = new TransitionRail;
+	auto *railContents = new QWidget;
 	railContents->setObjectName("transitionColumn");
-	railContents->setMinimumHeight(162);
+	auto *railStack = new QVBoxLayout(railContents);
+	railStack->setContentsMargins(0, 0, 0, 0);
+	railStack->setSpacing(6);
+	railStack->setAlignment(Qt::AlignTop);
 	auto *top = new QWidget(railContents);
 	auto *topLayout = new QVBoxLayout(top);
 	topLayout->setContentsMargins(0, 0, 0, 0);
-	topLayout->setSpacing(6);
+	topLayout->setSpacing(4);
 	topLayout->setAlignment(Qt::AlignTop);
-	// Selectors may scroll when the dock is short; the action itself never does.
-	auto *selectorScroll = new QScrollArea(railContents);
-	selectorScroll->setObjectName("transitionSelectorScroll");
-	selectorScroll->setWidgetResizable(true);
-	selectorScroll->setFrameShape(QFrame::NoFrame);
-	selectorScroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-	selectorScroll->setMinimumSize(0, 0);
-	selectorScroll->setWidget(top);
+	// Natural layout height: never crop selectors to make room for the action.
+	top->setObjectName("transitionSelectors");
+	top->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 	topLayout->setSizeConstraint(QLayout::SetMinimumSize);
-	railContents->top = selectorScroll;
+	railStack->addWidget(top);
 	auto *scrubAuto = new ScrubButton("TRANSICIÓ");
 	auto_ = scrubAuto;
 	auto_->setObjectName("autoTransition");
 	auto_->setParent(railContents);
-	railContents->action = auto_;
+
 	scrubAuto->duration = [this] {
 		return duration_->value();
 	};
@@ -713,8 +693,9 @@ DeckWidget::DeckWidget(Backend &backend, QWidget *parent) : QWidget(parent), bac
 	};
 	auto_->setMinimumWidth(136);
 	auto_->ensurePolished();
-	auto_->setFixedHeight(106);
+	auto_->setFixedHeight(64);
 	auto_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+	railStack->addWidget(auto_);
 
 	// Retain existing CUT shortcuts as a command without a visible second button.
 	cut_ = new ControlButton("CUT", this);
@@ -724,7 +705,7 @@ DeckWidget::DeckWidget(Backend &backend, QWidget *parent) : QWidget(parent), bac
 	transitionChoices_ = new QWidget;
 	transitionChoices_->setObjectName("transitionChoices");
 	transitionChoices_->setLayout(new QGridLayout);
-	transitionChoices_->layout()->setContentsMargins(0, 0, 0, 4);
+	transitionChoices_->layout()->setContentsMargins(0, 0, 0, 0);
 	transitionChoices_->layout()->setSpacing(4);
 	transitionChoices_->layout()->setAlignment(Qt::AlignLeft | Qt::AlignTop);
 	transitionChoices_->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
@@ -741,6 +722,8 @@ DeckWidget::DeckWidget(Backend &backend, QWidget *parent) : QWidget(parent), bac
 	duration_->setToolTip("Arrossega AUTO o un botó de transició amunt o avall per ajustar els mil·lisegons.");
 	duration_->hide(); // Remains the shared value for scrubbing and custom durations.
 	auto *timeLabel = new QLabel("Temps (ms)");
+	timeLabel->setObjectName("transitionTimeLabel");
+	timeLabel->setStyleSheet("font-size:11px; padding:0px; margin:0px;");
 	topLayout->addWidget(timeLabel);
 	durationChoices_ = new QWidget;
 	durationChoices_->setObjectName("durationChoices");
@@ -752,10 +735,10 @@ DeckWidget::DeckWidget(Backend &backend, QWidget *parent) : QWidget(parent), bac
 		choice->setObjectName("durationChoice");
 		choice->setCheckable(true);
 		choice->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Fixed);
-		choice->ensurePolished(); choice->setFixedHeight(26);
+		choice->ensurePolished(); choice->setFixedHeight(24);
 		timeGrid->addWidget(choice, i / 4, i % 4);
 		timeGrid->setColumnStretch(i % 4, 1);
-		timeGrid->setRowMinimumHeight(i / 4, 26);
+		timeGrid->setRowMinimumHeight(i / 4, 24);
 		connect(choice, &QPushButton::clicked, this, [this, choice] {
 			const auto snap = backend_.snapshot();
 			if (!config_.locked || !snap.ready || snap.busy ||
@@ -769,13 +752,15 @@ DeckWidget::DeckWidget(Backend &backend, QWidget *parent) : QWidget(parent), bac
 	auto *bottom = new QWidget(railContents);
 	auto *bottomLayout = new QVBoxLayout(bottom);
 	bottomLayout->setContentsMargins(0, 0, 0, 0);
-	bottomLayout->setSpacing(8);
+	bottomLayout->setSpacing(4);
 	presetLabel_ = new QLabel("Presets");
 	presetLabel_->setObjectName("transitionPresetLabel");
 	bottomLayout->addWidget(presetLabel_);
-	railContents->bottom = bottom;
+	railStack->addWidget(bottom, 1);
 	auto *scroll = new QScrollArea;
 	scroll->setObjectName("transitionPresetScroll");
+	scroll->setMinimumHeight(0);
+	scroll->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
 	presetScroll_ = scroll;
 	scroll->setWidgetResizable(true);
 	scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -795,7 +780,7 @@ DeckWidget::DeckWidget(Backend &backend, QWidget *parent) : QWidget(parent), bac
 	auto *railLayout = new QVBoxLayout(rail);
 	railLayout->setContentsMargins(0, 0, 0, 0);
 	railLayout->addWidget(railContents);
-	railContents->arrange();
+
 	columns_->addWidget(rail);
 	columns_->setStretchFactor(0, 1);
 	columns_->setStretchFactor(1, 0);
@@ -1359,6 +1344,7 @@ void DeckWidget::rebuild()
 		delete item->widget();
 		delete item;
 	}
+	presetLabel_->parentWidget()->setVisible(!config_.presets.isEmpty());
 	const auto transitionKinds = backend_.snapshot().transitionKinds;
 	int presetIndex = 0;
 	for (const auto &p : config_.presets) {
@@ -1384,7 +1370,7 @@ void DeckWidget::rebuild()
 	}
 	layout->setColumnStretch(0, 1);
 	layout->setColumnStretch(1, 1);
-	layout->setAlignment(Qt::AlignBottom);
+	layout->setAlignment(Qt::AlignTop);
 	rebuilding_ = false;
 }
 void DeckWidget::refresh()
@@ -1474,6 +1460,7 @@ void DeckWidget::refresh()
 	if (renderedTransitions_ != orderedTransitions) {
 		renderedTransitions_ = orderedTransitions;
 		auto *layout = static_cast<QGridLayout *>(transitionChoices_->layout());
+		for (int row = 0; row < layout->rowCount(); ++row) layout->setRowMinimumHeight(row, 0);
 		while (auto *item = layout->takeAt(0)) {
 			delete item->widget();
 			delete item;
@@ -1488,7 +1475,7 @@ void DeckWidget::refresh()
 			b->setCheckable(true);
 			b->setText(compactTransitionCode(name, state_.transitionKinds.value(name)));
 			b->ensurePolished();
-			b->setFixedHeight(36);
+			b->setFixedHeight(28);
 			b->setMinimumWidth(28);
 			b->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Fixed);
 			b->setToolTip(name + " · Arrossega amunt o avall per ajustar la durada");

@@ -48,7 +48,7 @@ Només s'eliminen els fitxers propis i les carpetes buides; no s'accedeix a perf
 col·leccions, imatges integrades ni dreceres de l'usuari.
 
 La ubicació està destinada a OBS instal·lat de manera normal. OBS portable ignora
-ProgramData i necessita una distribució diferent. La correcció 0.2.7 no s’ha executat dins de Windows: la verificació extreu el paquet amb 7-Zip, comprova la
+ProgramData i necessita una distribució diferent. La correcció 0.2.8 no s’ha executat dins de Windows: la verificació extreu el paquet amb 7-Zip, comprova la
 capçalera PE AMD64 i compara els fitxers amb els binaris i traduccions d'origen.
 Les dependències importades són OBS, la seva API de frontend, Qt6 i el runtime
 MSVC/UCRT que necessita la distribució normal d'OBS. No s'empaqueten Qt ni OBS.
