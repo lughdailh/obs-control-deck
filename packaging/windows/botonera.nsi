@@ -33,7 +33,7 @@ VIAddVersionKey /LANG=1027 "LegalCopyright" "GPL-2.0-or-later; vegeu LICENSE.txt
 !define REGKEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\OBSControlDeck"
 !define MUI_ABORTWARNING
 !define MUI_WELCOMEPAGE_TITLE "Botonera per a OBS"
-!define MUI_WELCOMEPAGE_TEXT "Instal·la la botonera ${VERSION} per a OBS Studio 33 de 64 bits, a Windows 10/11 x64.$\r$\n$\r$\nTanca OBS abans de continuar. No es modifiquen les escenes ni els perfils.$\r$\n$\r$\nLa integració DSK necessita Downstream Keyer instal·lat per separat. Montserrat és opcional.$\r$\n$\r$\nAquesta compilació de Windows està pendent de la primera prova real en un PC."
+!define MUI_WELCOMEPAGE_TEXT "Instal·la la botonera ${VERSION} per a OBS Studio 32/33 de 64 bits, a Windows 10/11 x64.$\r$\n$\r$\nTanca OBS abans de continuar. No es modifiquen les escenes ni els perfils.$\r$\n$\r$\nLa integració DSK necessita Downstream Keyer instal·lat per separat. Montserrat és opcional.$\r$\n$\r$\nAquesta compilació de Windows està pendent de la primera prova real en un PC."
 !define MUI_FINISHPAGE_TITLE "Botonera instal·lada"
 !define MUI_FINISHPAGE_TEXT "Obre OBS i ves a Acobladors (Docks) > Botonera.$\r$\n$\r$\nLa instal·lació queda a ProgramData per a tots els usuaris. Pots desinstal·lar-la des d'Aplicacions instal·lades de Windows.$\r$\n$\r$\nPrimera prova: prepara una escena, executa TRANSICIÓ i prem dues vegades una composició DSK per mostrar-la i amagar-la."
 !insertmacro MUI_PAGE_WELCOME
@@ -82,6 +82,10 @@ FunctionEnd
 Section "Botonera" Main
   SetOutPath "$INSTDIR"
   File "${PAYLOAD}/obs-control-deck.dll"
+  ; OBS 32 scans bin/64bit; OBS 33 prefers the root DLL and skips its legacy copy.
+  SetOutPath "$INSTDIR\bin\64bit"
+  File "${PAYLOAD}/obs-control-deck.dll"
+  SetOutPath "$INSTDIR"
   File "${PAYLOAD}/LLEGEIX-ME.txt"
   File "${PAYLOAD}/LICENSE.txt"
   SetOutPath "$INSTDIR\data\locale"
@@ -109,11 +113,14 @@ FunctionEnd
 Section "Uninstall"
   ; Remove only owned files. OBS configuration and scene collections are elsewhere.
   Delete "$INSTDIR\obs-control-deck.dll"
+  Delete "$INSTDIR\bin\64bit\obs-control-deck.dll"
   Delete "$INSTDIR\LLEGEIX-ME.txt"
   Delete "$INSTDIR\LICENSE.txt"
   Delete "$INSTDIR\data\locale\ca-ES.ini"
   Delete "$INSTDIR\data\locale\en-US.ini"
   Delete "$INSTDIR\Desinstal·lar Botonera.exe"
+  RMDir "$INSTDIR\bin\64bit"
+  RMDir "$INSTDIR\bin"
   RMDir "$INSTDIR\data\locale"
   RMDir "$INSTDIR\data"
   RMDir "$INSTDIR"

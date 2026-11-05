@@ -1,7 +1,7 @@
 BOTONERA PER A OBS · @VERSION@
 
 WINDOWS — PRIORITAT DE PROVA
-1. Instal·la OBS Studio 33 de 64 bits a Windows 10/11 x64 (Intel/AMD).
+1. Instal·la OBS Studio 32 o 33 de 64 bits a Windows 10/11 x64 (Intel/AMD).
 2. Tanca OBS. Executa Botonera-@VERSION@-Windows-x64-Setup.exe i accepta
    el permís d'administrador. L'instal·lador és en català.
 3. Obre OBS i ves a Acobladors (Docks) > Botonera.
@@ -9,7 +9,10 @@ WINDOWS — PRIORITAT DE PROVA
 S'instal·la per a tots els usuaris a:
 C:\ProgramData\obs-studio\plugins\obs-control-deck\obs-control-deck.dll
 C:\ProgramData\obs-studio\plugins\obs-control-deck\data\locale\...
-No cal copiar fitxers manualment. Aquest és el format nou d'OBS 33.
+També s’instal·la una còpia idèntica del DLL a:
+C:\ProgramData\obs-studio\plugins\obs-control-deck\bin\64bit\obs-control-deck.dll
+OBS 32 carrega aquesta còpia; OBS 33 prioritza la de l’arrel i no carrega el duplicat.
+No cal moure fitxers ni detectar quina versió d’OBS tens.
 Per desinstal·lar: Configuració de Windows > Aplicacions instal·lades >
 Botonera per a OBS. Es conserven escenes, perfils i configuració de botonera.
 Aquest instal·lador no és per a OBS en mode portable ni per a OBS ARM64.

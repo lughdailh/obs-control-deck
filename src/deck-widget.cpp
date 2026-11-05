@@ -261,17 +261,17 @@ int paintShortcutBadge(QPainter *p, const QRect &area, const QString &text)
 	p->restore();
 	return height;
 }
-// The host can repolish styles after docking. Keep three disjoint bands even
-// when a QPushButton size hint changes during that repolish.
+// Keep the action outside both scroll areas. Focus changes during a transition
+// must never scroll the production button out of view.
 class TransitionRail : public QWidget {
 public:
 	QWidget *top = nullptr, *action = nullptr, *bottom = nullptr;
 	QSize sizeHint() const override { return {180, 420}; }
-	QSize minimumSizeHint() const override { return {170, 402}; }
+	QSize minimumSizeHint() const override { return {170, 162}; }
 	void arrange() {
 		if (!top || !action || !bottom) return;
 		const int actionHeight = 106, gap = 12;
-		const int half = (height() - actionHeight - 2 * gap) / 2;
+		const int half = std::max(0, (height() - actionHeight - 2 * gap) / 2);
 		top->setGeometry(0, 0, width(), half);
 		action->setGeometry(0, half + gap, width(), actionHeight);
 		bottom->setGeometry(0, half + gap + actionHeight + gap, width(), half);
@@ -684,13 +684,22 @@ DeckWidget::DeckWidget(Backend &backend, QWidget *parent) : QWidget(parent), bac
 	columns_->addWidget(sceneColumn);
 	auto *railContents = new TransitionRail;
 	railContents->setObjectName("transitionColumn");
-	railContents->setMinimumHeight(402);
+	railContents->setMinimumHeight(162);
 	auto *top = new QWidget(railContents);
 	auto *topLayout = new QVBoxLayout(top);
 	topLayout->setContentsMargins(0, 0, 0, 0);
 	topLayout->setSpacing(6);
 	topLayout->setAlignment(Qt::AlignTop);
-	railContents->top = top;
+	// Selectors may scroll when the dock is short; the action itself never does.
+	auto *selectorScroll = new QScrollArea(railContents);
+	selectorScroll->setObjectName("transitionSelectorScroll");
+	selectorScroll->setWidgetResizable(true);
+	selectorScroll->setFrameShape(QFrame::NoFrame);
+	selectorScroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+	selectorScroll->setMinimumSize(0, 0);
+	selectorScroll->setWidget(top);
+	topLayout->setSizeConstraint(QLayout::SetMinimumSize);
+	railContents->top = selectorScroll;
 	auto *scrubAuto = new ScrubButton("TRANSICIÓ");
 	auto_ = scrubAuto;
 	auto_->setObjectName("autoTransition");
@@ -766,6 +775,7 @@ DeckWidget::DeckWidget(Backend &backend, QWidget *parent) : QWidget(parent), bac
 	bottomLayout->addWidget(presetLabel_);
 	railContents->bottom = bottom;
 	auto *scroll = new QScrollArea;
+	scroll->setObjectName("transitionPresetScroll");
 	presetScroll_ = scroll;
 	scroll->setWidgetResizable(true);
 	scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -779,15 +789,14 @@ DeckWidget::DeckWidget(Backend &backend, QWidget *parent) : QWidget(parent), bac
 	scroll->setWidget(presetArea_);
 	bottomLayout->addWidget(scroll, 1);
 
-	auto *railScroll = new QScrollArea;
-	railScroll->setObjectName("transitionRail");
-	railScroll->setWidgetResizable(true);
-	railScroll->setFrameShape(QFrame::NoFrame);
-	railScroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-	railScroll->setMinimumWidth(170);
-	railScroll->setWidget(railContents);
+	auto *rail = new QWidget;
+	rail->setObjectName("transitionRail");
+	rail->setMinimumWidth(170);
+	auto *railLayout = new QVBoxLayout(rail);
+	railLayout->setContentsMargins(0, 0, 0, 0);
+	railLayout->addWidget(railContents);
 	railContents->arrange();
-	columns_->addWidget(railScroll);
+	columns_->addWidget(rail);
 	columns_->setStretchFactor(0, 1);
 	columns_->setStretchFactor(1, 0);
 
@@ -1480,6 +1489,7 @@ void DeckWidget::refresh()
 			b->setText(compactTransitionCode(name, state_.transitionKinds.value(name)));
 			b->ensurePolished();
 			b->setFixedHeight(36);
+			b->setMinimumWidth(28);
 			b->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Fixed);
 			b->setToolTip(name + " · Arrossega amunt o avall per ajustar la durada");
 			layout->addWidget(b, i / 4, i % 4);

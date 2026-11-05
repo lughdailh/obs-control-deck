@@ -27,11 +27,12 @@ Intel/AMD x64; demana elevació per instal·lar per a tots els usuaris.
 `SetShellVarContext all` fa que `$APPDATA` de NSIS sigui ProgramData. La destinació
 és fixa; no s'accepta una redirecció amb `/D`.
 
-Estructura actual d'OBS 33:
+Estructura conjunta per a OBS 32 i 33:
 
 ```text
 C:\ProgramData\obs-studio\plugins\obs-control-deck\
   obs-control-deck.dll
+  bin\64bit\obs-control-deck.dll
   data\locale\ca-ES.ini
   data\locale\en-US.ini
   LLEGEIX-ME.txt
@@ -39,14 +40,15 @@ C:\ProgramData\obs-studio\plugins\obs-control-deck\
   Desinstal·lar Botonera.exe
 ```
 
+OBS 32 utilitza `bin/64bit`; OBS 33 prioritza el DLL de l’arrel i ignora el duplicat legacy quan aquest s’ha carregat. Totes dues còpies són idèntiques i comparteixen `data`. No es depèn de trobar una única versió d’OBS al registre.
+
 L'assistent comprova `obs64.exe` amb tasklist i ofereix reintentar quan l'usuari
 l'hagi tancat; mai mata el procés. La mateixa comprovació s'aplica en desinstal·lar.
 Només s'eliminen els fitxers propis i les carpetes buides; no s'accedeix a perfils,
 col·leccions, imatges integrades ni dreceres de l'usuari.
 
 La ubicació està destinada a OBS instal·lat de manera normal. OBS portable ignora
-ProgramData i necessita una distribució diferent. No s'ha executat el DLL ni
-l'assistent en Windows: la verificació extreu el paquet amb 7-Zip, comprova la
+ProgramData i necessita una distribució diferent. La correcció 0.2.7 no s’ha executat dins de Windows: la verificació extreu el paquet amb 7-Zip, comprova la
 capçalera PE AMD64 i compara els fitxers amb els binaris i traduccions d'origen.
 Les dependències importades són OBS, la seva API de frontend, Qt6 i el runtime
 MSVC/UCRT que necessita la distribució normal d'OBS. No s'empaqueten Qt ni OBS.

@@ -28,6 +28,7 @@ with tempfile.TemporaryDirectory(prefix='botonera-verify-') as tmp:
     unpacked = work / 'windows'
     run('7zz', 'x', '-y', f'-o{unpacked}', exe)
     assert digest(unpacked / 'obs-control-deck.dll') == digest(DIST / 'windows/obs-plugins/64bit/obs-control-deck.dll')
+    assert digest(unpacked / 'bin/64bit/obs-control-deck.dll') == digest(unpacked / 'obs-control-deck.dll')
     binary = (unpacked / 'obs-control-deck.dll').read_bytes()
     pe = int.from_bytes(binary[0x3c:0x40], 'little')
     assert binary[pe:pe+4] == b'PE\x00\x00'

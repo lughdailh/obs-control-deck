@@ -375,3 +375,14 @@ el ZIP Mac, la guia i els SHA-256 de la versió actual. Els instal·ladors no
 s’han executat; Windows continua pendent de prova nativa. No tenen signatura
 comercial ni notarització. La 0.2.6 del plugin ja s’havia carregat i revisat
 dins d’OBS al Mac durant la sessió de desenvolupament.
+
+
+## 0.2.7 — Transició fixa i instal·lador Windows 32/33
+
+El botó principal ja no viu dins d’un QScrollArea. La columna reserva tres bandes; només els selectors superiors i els presets inferiors tenen desplaçament propi. Es redueix l’alçada mínima de la columna perquè s’adapti als acobladors baixos sense retallar tota la columna. Els selectors mantenen l’amplada mínima compacta.
+
+Regressió: acoblador de 600 × 340, nou tipus de transició i vint presets addicionals. Es comprova l’amplada visible dels selectors, es desplacen totes dues zones, es dona focus a l’últim preset i s’alterna l’estat ocupat abans de sis clics reals simulats a TRANSICIÓ. El botó queda sencer i manté la posició. Suite Qt superada amb estil natiu i Fusion a escala 150%.
+
+Compilació macOS universal i Windows x64. Instal·ladors extrets i verificats: tots dos DLL de Windows són idèntics i corresponen al binari compilat; les traduccions, la guia i la versió del paquet macOS són correctes. OBS 32 escaneja bin/64bit; OBS 33 prioritza el DLL de l’arrel i descarta el duplicat legacy després de carregar-lo. S’eliminen totes dues còpies en desinstal·lar. No és un instal·lador per a OBS portable.
+
+La captura de revisió es genera amb deck-preview, no és una captura d’OBS Windows. Aquesta correcció 0.2.7 encara no s’ha executat en un PC; les fotos de l’usuari documenten el problema anterior en Windows/OBS 32.2.2.

@@ -8,30 +8,30 @@ Utilitza Montserrat si està instal·lada; altrament conserva la tipografia d’
 
 ## Instal·ladors
 
-**[Versió de proves 0.2.6 · GitHub Releases](https://github.com/lughdailh/obs-control-deck/releases/tag/v0.2.6)**
+**[Versió de proves 0.2.7 · GitHub Releases](https://github.com/lughdailh/obs-control-deck/releases/tag/v0.2.7)**
 
 Descarrega el fitxer per al teu sistema:
 
-- **[Windows x64 · Instal·lador EXE](https://github.com/lughdailh/obs-control-deck/releases/download/v0.2.6/Botonera-0.2.6-Windows-x64-Setup.exe)**
-- **[Mac Intel i Apple Silicon · Instal·lador PKG](https://github.com/lughdailh/obs-control-deck/releases/download/v0.2.6/Botonera-0.2.6-macOS-universal.pkg)**
-- [Guia de la primera instal·lació i prova](https://github.com/lughdailh/obs-control-deck/releases/download/v0.2.6/Botonera-LLEGEIX-ME.txt)
+- **[Windows x64 · Instal·lador EXE](https://github.com/lughdailh/obs-control-deck/releases/download/v0.2.7/Botonera-0.2.7-Windows-x64-Setup.exe)**
+- **[Mac Intel i Apple Silicon · Instal·lador PKG](https://github.com/lughdailh/obs-control-deck/releases/download/v0.2.7/Botonera-0.2.7-macOS-universal.pkg)**
+- [Guia de la primera instal·lació i prova](https://github.com/lughdailh/obs-control-deck/releases/download/v0.2.7/Botonera-LLEGEIX-ME.txt)
 
 Tanca OBS abans d’instal·lar. Després obre **Acobladors → Botonera**.
 
 Aquests són els paquets generats (també disponibles a `dist/` després d’empaquetar):
 
-- **Windows x64:** `Botonera-0.2.6-Windows-x64-Setup.exe`. Per a OBS Studio 33,
+- **Windows x64:** `Botonera-0.2.7-Windows-x64-Setup.exe`. Per a OBS Studio 32/33,
   Windows 10/11 Intel/AMD, amb OBS tancat. Instal·la a ProgramData i afegeix un
   desinstal·lador a Aplicacions instal·lades. No és per a OBS portable ni ARM64.
-- **macOS universal:** `Botonera-0.2.6-macOS-universal.pkg`. Assistent per a
+- **macOS universal:** `Botonera-0.2.7-macOS-universal.pkg`. Assistent per a
   l’usuari actual, a `~/Library/Application Support/obs-studio/plugins`.
 - `Botonera-LLEGEIX-ME.txt`: passos d’instal·lació i primera prova.
 
 No inclouen OBS, Downstream Keyer ni la font Montserrat. Són paquets de prova
 sense signatura comercial d’editor ni notarització. Windows està compilat i el
-contingut de l’instal·lador verificat, però encara no s’ha executat en un PC.
+contingut de l’instal·lador verificat. La correcció 0.2.7 encara s’ha de provar en un PC; la 0.2.6 ja s’ha carregat a OBS 32.2.2 i ha servit per detectar el problema del desplaçament.
 
-La destinació Windows segueix el [format nou d’OBS 33](https://obsproject.com/kb/legacy-plugin-developer-info):
+La destinació Windows inclou el format d’OBS 32 (`bin/64bit`) i el [format nou d’OBS 33](https://obsproject.com/kb/legacy-plugin-developer-info):
 `C:\ProgramData\obs-studio\plugins\obs-control-deck\obs-control-deck.dll`, amb `data` al costat.
 Els ZIP antics amb `obs-plugins/64bit` són el format legacy; per a un PC nou, utilitza l’instal·lador.
 Per generar-los de nou i verificar-los, consulta [packaging/README.md](packaging/README.md).
@@ -79,6 +79,10 @@ Programa i DSK actiu tenen llum càlida contínua sobre tot el cos; previ té un
 pulsació suau de 1,2 s. Els marcs vermell i verd es mantenen fixos.
 A **Graella i mida…** pots amagar les etiquetes i, separadament, els textos d’estat.
 El número sempre es mostra; si la casella és molt petita té prioritat sobre els textos.
+
+## Transicions fixes durant la realització (0.2.7)
+
+El botó TRANSICIÓ queda fora de qualsevol zona desplaçable. En acobladors baixos, només els selectors i els presets tenen desplaçament propi; els canvis de focus o d’estat ocupat no mouen el botó principal.
 
 ## Distribució de les transicions (0.2.6)
 

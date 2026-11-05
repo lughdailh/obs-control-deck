@@ -15,6 +15,7 @@
 #include <QDialog>
 #include <QCheckBox>
 #include <QScrollArea>
+#include <QScrollBar>
 #include <QSplitter>
 #include <QSplitterHandle>
 #include <QSpinBox>
@@ -99,7 +100,8 @@ public:
 			QVERIFY(autoButton->height() >= 104);
 			auto *presetLabel = w.findChild<QLabel *>("transitionPresetLabel");
 			QVERIFY(presetLabel->mapToGlobal(QPoint()).y() > autoButton->mapToGlobal(autoButton->rect().bottomLeft()).y());
-			QVERIFY(autoButton->mapToGlobal(QPoint()).y() > duration->mapToGlobal(duration->rect().bottomLeft()).y());
+			auto *selectorScroll = w.findChild<QScrollArea *>("transitionSelectorScroll");
+			QVERIFY(autoButton->mapToGlobal(QPoint()).y() > selectorScroll->mapToGlobal(selectorScroll->rect().bottomLeft()).y());
 			const QStringList codes = {"C", "F", "M", "S"};
 			int codeIndex = 0;
 			for (auto *choice : choices->findChildren<QPushButton *>("transitionChoice")) {
@@ -143,6 +145,44 @@ public:
 		invalid = b.saved.json(); invalid.remove("transitionColumnWidth"); invalid.remove("transitionSettingsWidth");
 		QVERIFY(deck::Config::parse(invalid, restored, error));
 		QCOMPARE(restored.transitionColumnWidth, 180); QCOMPARE(restored.transitionSettingsWidth, 180);
+	}
+	void transitionActionStaysVisibleAcrossFocusAndBusyChanges()
+	{
+		DemoBackend backend;
+		backend.state.transitions = {"Tall", "Fos", "Move", "Luma", "Stinger", "Swipe", "Slide", "Fade to color", "Wipe"};
+		backend.state.transitionKinds = {{"Tall", "cut_transition"}, {"Fos", "fade_transition"}};
+		backend.state.transition = "Fos";
+		auto config = backend.demo(); config.locked = true;
+		for (int i = 0; i < 20; ++i) config.presets.append({QString::number(i), "Fos", 100 + i * 50});
+		deck::DeckWidget widget(backend); widget.load(config); widget.resize(600, 340); widget.show();
+		QApplication::processEvents(); QApplication::processEvents();
+		auto *action = widget.findChild<QPushButton *>("autoTransition");
+		auto *selectors = widget.findChild<QScrollArea *>("transitionSelectorScroll");
+		auto *presets = widget.findChild<QScrollArea *>("transitionPresetScroll");
+		QVERIFY(selectors); QVERIFY(presets);
+		const QPoint fixed = action->mapTo(&widget, QPoint());
+		QVERIFY(widget.rect().contains(QRect(fixed, action->size())));
+		QVERIFY(selectors->verticalScrollBar()->maximum() > 0);
+		for (auto *choice : widget.findChildren<QPushButton *>("transitionChoice")) {
+			const auto area = choice->parentWidget()->rect();
+			QVERIFY(area.contains(choice->geometry()));
+			const QPoint visible = choice->mapTo(selectors->viewport(), QPoint());
+			QVERIFY(visible.x() >= 0);
+			QVERIFY(visible.x() + choice->width() <= selectors->viewport()->width());
+		}
+		auto presetButtons = widget.findChildren<QPushButton *>("transitionPreset");
+		for (int i = 0; i < 6; ++i) {
+			selectors->verticalScrollBar()->setValue(selectors->verticalScrollBar()->maximum());
+			presets->ensureWidgetVisible(presetButtons.last());
+			presetButtons.last()->setFocus();
+			backend.state.busy = true; widget.refresh(); QApplication::processEvents();
+			backend.state.busy = false; widget.refresh(); QApplication::processEvents();
+			QCOMPARE(action->mapTo(&widget, QPoint()), fixed);
+			QVERIFY(widget.rect().contains(QRect(fixed, action->size())));
+			QTest::mouseClick(action, Qt::LeftButton, Qt::NoModifier, action->rect().center());
+			QCOMPARE(action->mapTo(&widget, QPoint()), fixed);
+		}
+		QCOMPARE(backend.triggers, 6);
 	}
 	void editingShortcutBadges()
 	{
@@ -869,6 +909,7 @@ int main(int argc, char **argv)
 		t.typographyOverridesHostTheme();
 		t.compactTransitionAndDskToggle();
 		t.transitionColumnsLayout();
+		t.transitionActionStaysVisibleAcrossFocusAndBusyChanges();
 		t.editingShortcutBadges();
 		t.illuminatedNumbersAndVisibility();
 		t.dskSelectionDiffersFromFocus();
@@ -886,7 +927,7 @@ int main(int argc, char **argv)
 		t.configurableTransitionControls();
 		t.actualRightClickAndModeRoundtrip();
 		t.shortcutEditorAndLivePreviewCancellation();
-		std::cout << "19 test groups passed\n";
+		std::cout << "All test groups passed\n";
 		return 0;
 	} catch (const std::exception &e) {
 		std::cerr << "FAILED: " << e.what() << "\n";
